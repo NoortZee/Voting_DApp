@@ -10,36 +10,140 @@
     <div id="candidates"></div>
     <button onclick="submitVote()">Голосовать</button>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.5.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.6.1/web3.min.js"></script>
     <script>
-        const contractAddress = '0xB78c7A085fa680E34156827466A5555EF3c0Fc19'; //  адрес контракта
-        const abi = [ /* ABI контракта */ ];
+        const contractAddress = '0x2e7a3f24e4c30632c69395fdb234d83df76960f7'; // адрес вашего контракта
+        const abi = [
+    {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "candidateNames",
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "candidates",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "voteCount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [],
+      "name": "candidatesCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "voters",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "candidateIndex",
+          "type": "uint256"
+        }
+      ],
+      "name": "vote",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
+
+        const web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
+        const contract = new web3.eth.Contract(abi, contractAddress);
 
         async function loadCandidates() {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const contract = new ethers.Contract(contractAddress, abi, provider);
-            const count = await contract.candidatesCount();
+            try {
+                const count = await contract.methods.candidatesCount().call();
+                let candidatesDiv = document.getElementById('candidates');
 
-            let candidatesDiv = document.getElementById('candidates');
-            for (let i = 0; i < count; i++) {
-                const candidate = await contract.candidates(i);
-                candidatesDiv.innerHTML += `<div><input type="radio" name="candidate" value="${i}">${candidate.name}</div>`;
+                if (count == 0) {
+                    candidatesDiv.innerHTML = "<p>Кандидаты отсутствуют.</p>";
+                    return;
+                }
+
+                for (let i = 0; i < count; i++) {
+                    const candidate = await contract.methods.candidates(i).call();
+                    candidatesDiv.innerHTML += `<div><input type="radio" name="candidate" value="${i}">${candidate.name}</div>`;
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке кандидатов:", error);
             }
         }
 
-        async function submitVote() {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
-            const contract = new ethers.Contract(contractAddress, abi, signer);
-            const selectedCandidate = document.querySelector('input[name="candidate"]:checked');
+   async function submitVote() {
+    const accounts = await web3.eth.getAccounts();
+    const selectedCandidate = document.querySelector('input[name="candidate"]:checked');
 
-            if (selectedCandidate) {
-                await contract.vote(selectedCandidate.value);
-                alert("Ваш голос учтен!");
+    if (selectedCandidate) {
+        try {
+            await contract.methods.vote(selectedCandidate.value).send({ from: accounts[3] });
+            alert("Ваш голос учтен!");
+            loadCandidates(); // Обновляем список кандидатов после голосования
+        } catch (error) {
+            console.error("Ошибка при голосовании:", error);
+
+            // Проверка на конкретную ошибку
+            if (error.message.includes("You have already voted")) {
+                alert("Вы уже проголосовали. Повторное голосование недоступно.");
             } else {
-                alert("Пожалуйста, выберите кандидата.");
+                alert("Ошибка при голосовании. Проверьте консоль для подробностей.");
             }
         }
+    } else {
+        alert("Пожалуйста, выберите кандидата.");
+    }
+}
 
         window.onload = loadCandidates;
     </script>
