@@ -102,24 +102,27 @@
         const web3 = new Web3(new Web3.providers.HttpProvider("http://127.0.0.1:7545"));
         const contract = new web3.eth.Contract(abi, contractAddress);
 
-        async function loadCandidates() {
-            try {
-                const count = await contract.methods.candidatesCount().call();
-                let candidatesDiv = document.getElementById('candidates');
+      async function loadCandidates() {
+    try {
+        const count = await contract.methods.candidatesCount().call();
+        let candidatesDiv = document.getElementById('candidates');
 
-                if (count == 0) {
-                    candidatesDiv.innerHTML = "<p>Кандидаты отсутствуют.</p>";
-                    return;
-                }
+        // Очищаем содержимое перед добавлением новых кандидатов
+        candidatesDiv.innerHTML = '';
 
-                for (let i = 0; i < count; i++) {
-                    const candidate = await contract.methods.candidates(i).call();
-                    candidatesDiv.innerHTML += `<div><input type="radio" name="candidate" value="${i}">${candidate.name}</div>`;
-                }
-            } catch (error) {
-                console.error("Ошибка при загрузке кандидатов:", error);
-            }
+        if (count == 0) {
+            candidatesDiv.innerHTML = "<p>Кандидаты отсутствуют.</p>";
+            return;
         }
+
+        for (let i = 0; i < count; i++) {
+            const candidate = await contract.methods.candidates(i).call();
+            candidatesDiv.innerHTML += `<div><input type="radio" name="candidate" value="${i}">${candidate.name}</div>`;
+        }
+    } catch (error) {
+        console.error("Ошибка при загрузке кандидатов:", error);
+    }
+}
 
    async function submitVote() {
     const accounts = await web3.eth.getAccounts();
@@ -127,7 +130,7 @@
 
     if (selectedCandidate) {
         try {
-            await contract.methods.vote(selectedCandidate.value).send({ from: accounts[3] });
+            await contract.methods.vote(selectedCandidate.value).send({ from: accounts[5] });
             alert("Ваш голос учтен!");
             loadCandidates(); // Обновляем список кандидатов после голосования
         } catch (error) {
