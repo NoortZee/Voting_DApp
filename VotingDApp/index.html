@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосование</title>
+</head>
+<body>
+    <h1>Голосование</h1>
+    <div id="candidates"></div>
+    <button onclick="submitVote()">Голосовать</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.5.0.0.min.js"></script>
+    <script>
+        const contractAddress = '0xB78c7A085fa680E34156827466A5555EF3c0Fc19'; //  адрес контракта
+        const abi = [ /* ABI контракта */ ];
+
+        async function loadCandidates() {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const contract = new ethers.Contract(contractAddress, abi, provider);
+            const count = await contract.candidatesCount();
+
+            let candidatesDiv = document.getElementById('candidates');
+            for (let i = 0; i < count; i++) {
+                const candidate = await contract.candidates(i);
+                candidatesDiv.innerHTML += `<div><input type="radio" name="candidate" value="${i}">${candidate.name}</div>`;
+            }
+        }
+
+        async function submitVote() {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new ethers.Contract(contractAddress, abi, signer);
+            const selectedCandidate = document.querySelector('input[name="candidate"]:checked');
+
+            if (selectedCandidate) {
+                await contract.vote(selectedCandidate.value);
+                alert("Ваш голос учтен!");
+            } else {
+                alert("Пожалуйста, выберите кандидата.");
+            }
+        }
+
+        window.onload = loadCandidates;
+    </script>
+</body>
+</html>
