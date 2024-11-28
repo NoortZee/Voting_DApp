@@ -1,4 +1,4 @@
-# Voting_DApp
+# Голосование на Solidity
 
 ### ganache + truffle
 
